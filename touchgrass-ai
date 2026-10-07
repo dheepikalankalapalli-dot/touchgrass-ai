@@ -1,0 +1,175 @@
+from flask import Flask, request, jsonify, render_template_string
+
+app = Flask(__name__)
+
+HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TouchGrass AI 🌱</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef7ee;
+            text-align: center;
+            padding: 50px 20px;
+            color: #183a1d;
+        }
+
+        .box {
+            max-width: 550px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+
+        h1 {
+            font-size: 40px;
+        }
+
+        select, button {
+            width: 100%;
+            padding: 14px;
+            margin-top: 15px;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        select {
+            border: 1px solid #ccc;
+        }
+
+        button {
+            border: none;
+            background: #2e7d32;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #256628;
+        }
+
+        .activity {
+            background: #eef8ee;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="box">
+    <h1>🌱 TouchGrass AI</h1>
+
+    <p>Less screen time. More real life.</p>
+
+    <h3>How are you feeling?</h3>
+
+    <select id="mood">
+        <option value="happy">😊 Happy</option>
+        <option value="sad">😔 Sad</option>
+        <option value="tired">😴 Tired</option>
+        <option value="bored">😐 Bored</option>
+    </select>
+
+    <button onclick="getActivity()">
+        Get Offline Activity
+    </button>
+
+    <div id="result"></div>
+</div>
+
+<script>
+async function getActivity() {
+
+    const mood = document.getElementById("mood").value;
+
+    document.getElementById("result").innerHTML =
+        "<p>Finding something for you... 🌱</p>";
+
+    const response = await fetch("/recommend", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ mood: mood })
+    });
+
+    const data = await response.json();
+
+    let output = "<h3>Try these activities:</h3>";
+
+    data.recommendations.forEach(function(activity) {
+        output += `<div class="activity">${activity}</div>`;
+    });
+
+    document.getElementById("result").innerHTML = output;
+}
+</script>
+
+</body>
+</html>
+"""
+
+activities = {
+    "happy": [
+        "🌳 Go for a walk in a nearby park",
+        "⚽ Play a sport with friends",
+        "📸 Take photos outdoors",
+        "☕ Meet a friend for coffee"
+    ],
+
+    "sad": [
+        "🚶 Take a relaxing 15-minute walk",
+        "📞 Call someone you care about",
+        "🌿 Spend some quiet time outdoors",
+        "🎵 Listen to music while walking"
+    ],
+
+    "tired": [
+        "🧘 Do some light stretching",
+        "🌤️ Get some fresh air",
+        "💧 Drink water and take a short break",
+        "🌱 Sit outside without your phone"
+    ],
+
+    "bored": [
+        "🏸 Play a physical game",
+        "🌳 Visit a nearby park",
+        "🗺️ Explore a new place",
+        "🚴 Go for a bicycle ride"
+    ]
+}
+
+
+@app.route("/")
+def home():
+    return render_template_string(HTML)
+
+
+@app.route("/recommend", methods=["POST"])
+def recommend():
+
+    data = request.get_json()
+    mood = data.get("mood", "bored")
+
+    suggestions = activities.get(
+        mood,
+        activities["bored"]
+    )
+
+    return jsonify({
+        "recommendations": suggestions
+    })
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
